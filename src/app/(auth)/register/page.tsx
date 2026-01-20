@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Mail, User, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +22,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 
 import pesoLogo from "@/assets/images/image-Photoroom.png";
+import { useAuth } from "@/hooks/useAuth";
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
@@ -41,6 +43,9 @@ function passwordStrength(password: string) {
 }
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const { login } = useAuth();
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -115,6 +120,24 @@ export default function RegisterPage() {
     password.length >= 8 &&
     confirmPassword === password &&
     termsAccepted;
+
+  function handleDevAdminBypass() {
+    if (process.env.NODE_ENV !== "development") return;
+
+    // Local-only development shortcut: simulate an authenticated admin user.
+    login(
+      {
+        id: 0,
+        username: "dev-admin",
+        email: "dev-admin@example.com",
+        role: "admin",
+        name: "Development Admin",
+      },
+      "dev-admin-token",
+    );
+
+    router.push("/dashboard/admin");
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -377,6 +400,27 @@ export default function RegisterPage() {
               .
             </p>
           </div>
+
+          {process.env.NODE_ENV === "development" && (
+            <div className="mt-2 space-y-2 rounded-md border border-dashed border-amber-400 bg-amber-50 px-3 py-2">
+              <p className="text-center text-xs font-semibold uppercase tracking-wide text-amber-700">
+                Development only
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full border-amber-500 text-amber-800 hover:bg-amber-100"
+                onClick={handleDevAdminBypass}
+              >
+                Bypass to Admin Account
+              </Button>
+              <p className="text-center text-[11px] text-amber-700">
+                This shortcut is only rendered in development and does not exist in
+                production builds.
+              </p>
+            </div>
+          )}
         </CardContent>
 
         <CardFooter className="flex flex-col gap-2 border-t">
